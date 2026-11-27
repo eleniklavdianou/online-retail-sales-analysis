@@ -1,0 +1,102 @@
+SELECT * from retail_sales_project1
+
+--1)Top 10 προϊόντα σε συνολικές πωλήσεις (χωρίς μη-προϊοντικούς κωδικούς)
+select
+stock_code,
+description,
+sum(total_amount) as total_sales
+from retail_sales_project1
+where movement_type = 'Sales'
+and stock_code ~ '^[0-9]'
+and description is not null
+group by stock_code,
+description
+order by sum(total_amount) desc
+limit 10;
+
+
+
+
+--2)Top 10 Χώρες εκτός Ηνωμένου Βασιλείου
+-- Τη συνολική αξία πωλήσεων (total_sales)
+-- Το πλήθος μοναδικών παραγγελιών (orders από το invoice_no)
+-- Το πλήθος μοναδικών πελατών (customers από το customer_id)
+select 
+country,
+sum(total_amount) as total_sales,
+count(distinct invoice_no) as unique_orders,
+count(distinct customer_id) as unique_customers
+from retail_sales_project1
+where country not in ('United Kingdom')
+and movement_type = 'Sales'
+group by country
+order by sum(total_amount) desc
+limit 10;
+
+
+--3)Μηνιαία Εξέλιξη Πωλήσεων & Μέση Αξία Παραγγελίας (AOV)
+select 
+sum(total_amount) as total_sales,
+count(distinct invoice_no) as unique_orders,
+date_trunc('month',invoice_date)::date as month,
+round(sum(total_amount)/count(distinct invoice_no),2)::numeric as aov
+from retail_sales_project1
+where movement_type = 'Sales'
+group by date_trunc('month',invoice_date)::date
+order by date_trunc('month',invoice_date)::date
+
+--4)Άσκηση: Ανάλυση Κινήσεων (movement_type) — Πωλήσεις έναντι Επιστροφών / Ακυρώσεων
+select * from retail_sales_project1
+
+with counts as(
+select
+SUM(CASE WHEN movement_type = 'Sales' THEN total_amount ELSE 0 END) AS net_sales,
+ABS(SUM(CASE WHEN movement_type = 'Return / Cancellation' THEN total_amount ELSE 0 END)) AS returns
+from retail_sales_project1
+)
+select 
+net_sales,
+returns,
+net_sales+returns as gross_sales,
+round(100.0*net_sales/(net_sales+returns),2) as percen_of_sales,
+round(100.0*returns/(net_sales+returns),2) as percen_of_returns
+from counts
+
+--5)Top 10 Πελάτες ανά Συνολική Αξία
+select * from retail_sales_project1
+select 
+customer_id,
+sum(total_amount) as total_sales
+from retail_sales_project1
+where movement_type = 'Sales'
+and customer_id is not null
+group by customer_id
+order by sum(total_amount) desc
+limit 10
+
+--6)Συγκέντρωση τζίρου στους Top 10 πελάτες
+select * from retail_sales_project1
+
+with top10_sales as(
+select
+customer_id,
+sum(total_amount) as top_10_sales
+from retail_sales_project1
+where customer_id is not null
+and movement_type = 'Sales'
+group by customer_id
+order by sum(total_amount) desc
+limit 10
+),
+total_sales as(
+select
+sum(total_amount) as total_sales
+from retail_sales_project1
+where movement_type = 'Sales'
+and customer_id is not null
+)
+select
+round((SELECT SUM(top_10_sales) FROM top10_sales)::NUMERIC, 2) AS top10_sales,
+round(total_sales::NUMERIC, 2) AS total_identified_sales,
+round((100.0 * (SELECT SUM(top_10_sales) FROM top10_sales) / NULLIF(total_sales, 0))::NUMERIC, 2) AS top10_share_pct
+FROM total_sales;
