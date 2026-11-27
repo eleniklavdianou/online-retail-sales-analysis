@@ -48,3 +48,32 @@ Raw retail transaction logs often contain returns, manual accounting entries, sh
 * **Excel & Power Query:** Data ingestion, type handling, filtering, multi-sheet workbook architecture
 * **Pivot Tables & Charts:** Multi-filter ranking, `% of Grand Total` share calculations, Treemap & Column/Bar visualizations
 * **Business Analytics:** KPI definition, data anomaly isolation, executive storytelling
+
+
+# Retail Sales Analysis (`retail_sales_project1`)
+
+End-to-end SQL analysis in PostgreSQL focusing on commercial performance, order dynamics, movement types, and customer revenue concentration.
+
+## Key Business Questions & Findings
+
+1. **Top 10 Products by Sales (`movement_type = 'Sales'`)**
+   - Identifies the highest-revenue products to prioritize stock availability, supplier terms, and promotional focus.
+
+2. **Top 10 Countries Excluding the UK (`movement_type = 'Sales'`)**
+   - Evaluates international revenue concentration outside the home/primary market to guide localization and shipping priorities.
+
+3. **Monthly Sales & Average Order Value (AOV) Trend (`movement_type = 'Sales'`)**
+   - Tracks seasonality and revenue growth alongside order value (`SUM(total_amount) / COUNT(DISTINCT invoice_no)`) to separate volume shifts from basket-size changes.
+
+4. **Movement Type Breakdown (`Sales`, `Return / Cancellation`, `Inventory / Non-Sale Adjustment`)**
+   - Separates sales lines (`9,244,134.63`) from returns/cancellations (`518,075.29` absolute value; `9,762,209.92` combined `Sales + ABS(Returns)`, representing `94.69%` sales vs. `5.31%` returns across those two categories), preventing returns and inventory adjustments from distorting core sales metrics[cite: 1].
+
+5. **Top 10 Customers by Sales Value & Order Frequency (`movement_type = 'Sales'`, `customer_id IS NOT NULL`)**
+   - Ranks top identified accounts by total sales (`total_sales`), order count (`unique_orders`), and average order value (`avg_order_value`) to spot key B2B/repeat buyers.
+
+6. **Revenue Concentration Among Top 10 Customers (`movement_type = 'Sales'`, `customer_id IS NOT NULL`)**
+   - Measures exposure to top accounts: the Top 10 customers generate **1,281,307.48** out of **8,018,788.42** in total identified sales (**15.98%**)[cite: 7].
+
+## Stack & Conventions
+- **Database & Tooling:** PostgreSQL, pgAdmin, Excel / Power Query, GitHub
+- **Modeling Rules:** Core revenue metrics filter on `movement_type = 'Sales'`, exclude `NULL` `customer_id` values where customer identity is required, and guard divisions with `NULLIF(..., 0)`[cite: 7].
